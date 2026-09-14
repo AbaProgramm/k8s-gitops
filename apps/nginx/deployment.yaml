@@ -34,7 +34,7 @@ spec:
 #          effect: NoSchedule
       containers:
         - name: nginx
-          image: nginx:alpine
+          image: image: ghcr.io/AbaProgramm/nginx-app:initial
           ports:
             - containerPort: 80
           resources:
