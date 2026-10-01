@@ -34,11 +34,7 @@ spec:
 #          effect: NoSchedule
       containers:
         - name: nginx
-<<<<<<< HEAD
-          image: image: ghcr.io/abaprogramm/nginx-app:initial
-=======
           image: ghcr.io/abaprogramm/nginx-app:a4ab616926fb5b3e5590c3afd9171b0164e3ea28
->>>>>>> 229e2ca69be856a09a054222c838b68a5818d7e8
           ports:
             - containerPort: 80
           resources:
@@ -48,8 +44,7 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
-
-         volumeMounts:
+          volumeMounts:
             - name: html
               mountPath: /usr/share/nginx/html
       volumes:
