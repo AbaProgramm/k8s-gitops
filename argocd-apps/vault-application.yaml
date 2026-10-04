@@ -36,6 +36,5 @@ spec:
     namespace: vault
   syncPolicy:
     syncOptions:
-          enabled: true
-          serviceType: NodePort
-          serviceNodePort: 30820
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
