@@ -28,9 +28,14 @@ spec:
           enabled: true
         injector:
           enabled: true
+          enabled: true
+          serviceType: NodePort
+          serviceNodePort: 30820
   destination:
     server: https://kubernetes.default.svc
     namespace: vault
   syncPolicy:
     syncOptions:
-      - CreateNamespace=true
+          enabled: true
+          serviceType: NodePort
+          serviceNodePort: 30820
