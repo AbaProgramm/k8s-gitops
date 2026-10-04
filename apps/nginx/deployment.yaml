@@ -12,7 +12,12 @@ spec:
     metadata:
       labels:
         app: nginx
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "nginx"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/nginx/db"
     spec:
+      serviceAccountName: nginx
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
