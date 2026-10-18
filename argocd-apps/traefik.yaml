@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "1" }
+spec:
+  project: default
+  source:
+    repoURL: https://traefik.github.io/charts
+    chart: traefik
+    targetRevision: "*"      # TODO: после первого sync закрепи точную версию (helm search repo traefik --versions)
+    helm:
+      valuesObject:
+        service: { type: LoadBalancer }
+  destination: { server: https://kubernetes.default.svc, namespace: traefik }
+  syncPolicy:
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]

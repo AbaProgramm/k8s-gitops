@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: auth-app, namespace: auth-app }
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }   # zero-downtime выкатка
+  selector: { matchLabels: { app: auth-app } }
+  template:
+    metadata:
+      labels: { app: auth-app }
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
+      topologySpreadConstraints:          # по одному поду на воркер
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector: { matchLabels: { app: auth-app } }
+      containers:
+        - name: app
+          image: auth-app                 # тег подставляет kustomize (overlays/prod), его правит CI
+          ports: [{ name: http, containerPort: 8080 }]
+          env:
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: auth-db-app, key: uri } }
+            - name: JWT_SECRET
+              valueFrom: { secretKeyRef: { name: auth-app-secrets, key: JWT_SECRET } }
+            - name: DB_POOL_MAX
+              value: "5"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 50m, memory: 96Mi }
+            limits: { memory: 192Mi }
+          startupProbe:  { httpGet: { path: /healthz, port: http }, periodSeconds: 2, failureThreshold: 30 }
+          livenessProbe: { httpGet: { path: /healthz, port: http }, periodSeconds: 10, failureThreshold: 3 }
+          readinessProbe: { httpGet: { path: /readyz, port: http }, periodSeconds: 5, failureThreshold: 2 }
+          lifecycle:
+            preStop: { exec: { command: ["sleep", "5"] } }   # даём Service/Ingress убрать под из endpoints до SIGTERM

@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: [../../base]
+images:
+  - name: auth-app
+    newName: ghcr.io/abaprogramm/auth-app
+    newTag: bootstrap            # CI перезаписывает на git sha при каждом merge в main

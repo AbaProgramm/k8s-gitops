@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "1" }
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: "*"      # TODO: после первого sync закрепи точную версию (helm search repo kube-prometheus-stack --versions)
+    helm:
+      valuesObject:
+        prometheus:
+          prometheusSpec:
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            retention: 7d
+            storageSpec: { volumeClaimTemplate: { spec: { storageClassName: local-path, resources: { requests: { storage: 10Gi } } } } }
+        grafana: { persistence: { enabled: true, storageClassName: local-path, size: 2Gi } }
+  destination: { server: https://kubernetes.default.svc, namespace: monitoring }
+  syncPolicy:
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]

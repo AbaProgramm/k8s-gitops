@@ -1,0 +1,11 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-config
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "2" }
+spec:
+  project: default
+  source: { repoURL: https://github.com/YOUR_GH_USER/k8s-gitops, targetRevision: main, path: apps/platform-config }
+  destination: { server: https://kubernetes.default.svc, namespace: default }
+  syncPolicy: { syncOptions: [SkipDryRunOnMissingResource=true] }

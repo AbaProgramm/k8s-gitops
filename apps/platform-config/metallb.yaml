@@ -1,0 +1,10 @@
+# Диапазон свободных IP в твоей LAN (ВНЕ DHCP-пула роутера!) — поправь под свою сеть
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata: { name: homelab, namespace: metallb-system }
+spec: { addresses: ["192.168.100.240-192.168.100.250"] }
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata: { name: homelab, namespace: metallb-system }
+spec: { ipAddressPools: [homelab] }

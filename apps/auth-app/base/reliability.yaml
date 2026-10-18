@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget          # kubectl drain не убьёт больше 1 пода сразу
+metadata: { name: auth-app, namespace: auth-app }
+spec:
+  minAvailable: 2
+  selector: { matchLabels: { app: auth-app } }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: auth-app, namespace: auth-app }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: auth-app }
+  minReplicas: 3
+  maxReplicas: 6
+  metrics: [{ type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } } }]

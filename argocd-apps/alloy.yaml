@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "1" }
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: alloy
+    targetRevision: "*"      # TODO: после первого sync закрепи точную версию (helm search repo alloy --versions)
+    helm:
+      valuesObject:
+        # TODO: river-конфиг: discovery.kubernetes -> loki.source.kubernetes -> loki.write url=http://loki.monitoring:3100/loki/api/v1/push
+        alloy: { configMap: { create: true } }
+  destination: { server: https://kubernetes.default.svc, namespace: monitoring }
+  syncPolicy:
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]

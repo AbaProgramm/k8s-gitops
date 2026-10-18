@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metallb
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "0" }
+spec:
+  project: default
+  source:
+    repoURL: https://metallb.github.io/metallb
+    chart: metallb
+    targetRevision: "0.x"      # TODO: после первого sync закрепи точную версию (helm search repo metallb --versions)
+    helm:
+      valuesObject:
+        {}
+  destination: { server: https://kubernetes.default.svc, namespace: metallb-system }
+  syncPolicy:
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]

@@ -1,0 +1,19 @@
+# CloudNativePG: оператор сам делает primary + 2 реплики, failover, и создаёт Secret auth-db-app (uri, user, password)
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: auth-db
+  namespace: auth-app
+spec:
+  instances: 3                 # 1 primary + 2 sync/async реплики, по одной на воркер (anti-affinity по умолчанию)
+  storage: { size: 5Gi, storageClass: local-path }
+  bootstrap:
+    initdb: { database: app, owner: app }
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+  monitoring: { enablePodMonitor: true }
+  # TODO (фаза 3): бэкапы в MinIO + WAL-архив = PITR
+  # backup:
+  #   barmanObjectStore: { destinationPath: s3://pg-backups/auth-db, endpointURL: http://minio.minio:9000, s3Credentials: {...} }
+  #   retentionPolicy: 14d

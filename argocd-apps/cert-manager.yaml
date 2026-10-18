@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "0" }
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    targetRevision: "v1.x"      # TODO: после первого sync закрепи точную версию (helm search repo cert-manager --versions)
+    helm:
+      valuesObject:
+        crds: { enabled: true }
+  destination: { server: https://kubernetes.default.svc, namespace: cert-manager }
+  syncPolicy:
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]
