@@ -1,0 +1,74 @@
+# Карта репозиториев
+
+**Репо кода** отвечает на «что программа делает».
+**Репо gitops** отвечает на «где и как это работает в кластере».
+В gitops: `argocd-apps/` = ОГЛАВЛЕНИЕ (что ставим), `apps/` = СОДЕРЖИМОЕ (как устроено).
+
+Цепочка релиза:
+auth-app (код) -> CI собирает образ ghcr.io/<user>/auth-app:<sha> -> CI коммитит <sha> в apps/auth-app/overlays/prod
+-> ArgoCD видит новый тег -> Refresh + Sync -> выкатка в кластер.
+
+## Репо `auth-app` (код)
+```
+auth-app/
+├── app/main.py              всё приложение: API, логин, пробы, метрики
+├── app/__init__.py          пустой, делает папку Python-пакетом
+├── tests/test_smoke.py      минимальный тест запуска
+├── requirements.txt         Python-библиотеки и версии
+├── Dockerfile               рецепт образа
+└── .github/workflows/ci.yaml  тест -> сборка -> скан Trivy -> тег в gitops
+```
+
+## Репо `k8s-gitops` (состояние кластера)
+```
+k8s-gitops/
+├── argocd-apps/   ОГЛАВЛЕНИЕ: Application-карточки (за папкой следит root-app)
+│   ├── nginx-application.yaml, vault...   старое, уже работает
+│   ├── cert-manager.yaml                  выпуск TLS-сертификатов
+│   ├── external-secrets.yaml              секреты из Vault -> Kubernetes Secret
+│   ├── cloudnative-pg.yaml                оператор Postgres
+│   ├── traefik.yaml                       ingress
+│   ├── kube-prometheus-stack.yaml         Prometheus, Grafana, Alertmanager
+│   ├── loki.yaml, alloy.yaml              хранилище и сборщик логов
+│   ├── platform-config.yaml               -> apps/platform-config
+│   └── auth-app.yaml                      -> apps/auth-app/overlays/prod
+├── apps/          СОДЕРЖИМОЕ: наши манифесты
+│   ├── nginx/                             старое
+│   ├── platform-config/
+│   │   ├── cluster-issuer.yaml            свой корневой CA
+│   │   ├── secret-store.yaml              как External Secrets ходит в Vault
+│   │   └── kustomization.yaml             список файлов папки
+│   └── auth-app/
+│       ├── base/                          общее для любого окружения
+│       │   ├── namespace.yaml             namespace + политика безопасности
+│       │   ├── deployment.yaml            3 копии, пробы, лимиты, spread по нодам
+│       │   ├── service.yaml               Service + Ingress (auth.home.lab, TLS)
+│       │   ├── database.yaml              Postgres (CloudNativePG, 3 инстанса)
+│       │   ├── externalsecret.yaml        JWT-ключ из Vault (secret/auth-app/jwt)
+│       │   ├── reliability.yaml           PDB + HPA
+│       │   ├── observability.yaml         ServiceMonitor + алерты/SLO
+│       │   ├── networkpolicy.yaml         default-deny + разрешения
+│       │   └── kustomization.yaml         список файлов base
+│       └── overlays/prod/kustomization.yaml   тег образа (меняет CI)
+└── docs/          заметки для людей, ArgoCD их не читает
+```
+
+## Три вопроса, чтобы найти место
+1. Про код? -> репо `auth-app`.
+2. Про «что ставим»? -> `argocd-apps/`.
+3. Про «как настроено»? -> `apps/<имя>/`.
+
+## Шпаргалка
+| Хочу | Иду в |
+|---|---|
+| Изменить логику программы | auth-app: app/main.py |
+| Добавить библиотеку | auth-app: requirements.txt |
+| Реплики, лимиты, пробы | apps/auth-app/base/deployment.yaml |
+| Выкатить версию | само через CI; в ArgoCD Refresh + Sync |
+| Откатить релиз | git revert коммита с тегом в overlays/prod |
+| Домен или TLS | apps/auth-app/base/service.yaml |
+| Размер/число инстансов БД | apps/auth-app/base/database.yaml |
+| Алерты | apps/auth-app/base/observability.yaml |
+| Новый компонент (Velero...) | новый файл в argocd-apps/ |
+| Версия/values готового чарта | файл в argocd-apps/, блок helm |
+| CA или связь с Vault | apps/platform-config/ |
